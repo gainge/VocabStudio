@@ -153,11 +153,14 @@ class Recorder(tk.Frame):
 
         # Create a new grid placement
         for newIndex, item in enumerate(self.recordingLabels):
+            row = newIndex / 2
+            col = newIndex % 2
             # Reset grid position
-            item.grid(row=newIndex)
+            item.grid(row=int(row), column=int(col))
             # Reset binding to select correct index
             item.bind("<Button-1>", 
                 lambda event, index=newIndex: self.selectRecording(index))
+
 
 
     def callback(self):
