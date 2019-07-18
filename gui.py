@@ -97,8 +97,6 @@ class Recorder(tk.Frame):
         self.saveButton = tk.Button(self.root, command=self.saveAudio, text="Save", fg='green')
         self.saveButton.grid(row=4, column=1, sticky='ew')
 
-
-        # self.data()
         self.root.pack()
 
     def saveAudio(self):
@@ -190,20 +188,6 @@ class Recorder(tk.Frame):
 
     def testButton(self, e=None):
         print("hey there! " + self.currentMode.get())
-
-    def data(self):
-        for i in range(5):
-            tk.Label(self.frame,text=i).grid(row=i,column=0)
-
-            # Configure the main Label
-            mainLabel = tk.Label(self.frame, text="my text"+str(i))
-            mainLabel.grid(row=i, column=1, sticky='ew')
-            mainLabel.bind("<Button-1>", 
-                lambda event, index=i: self.selectRecording(index))
-            self.recordings.append(mainLabel)
-
-
-            # tk.Label(self.frame,text="..........").grid(row=i,column=2)
 
     def darken(self, index):
         # Check the index
