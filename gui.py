@@ -216,9 +216,10 @@ class Recorder(tk.Frame):
 
     def keyPress(self, e):
         if (e.keycode == KEY_SHIFT_Q):
-            self.callback()
-
-        if (e.keycode == KEY_P):
+            exitConfirm = tk.messagebox.askyesno(title="Exit", message="Are you sure you want to exit?")
+            # Quit if confirm
+            if exitConfirm: self.callback()
+        elif (e.keycode == KEY_P):
             self.playRecording()
         print('down', e.keycode)
 
