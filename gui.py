@@ -216,12 +216,26 @@ class Recorder(tk.Frame):
 
     def keyPress(self, e):
         if (e.keycode == KEY_SHIFT_Q):
+            # Unbind keypresses for dialog box
+            self.root.unbind_all("<Key>")
+
             exitConfirm = tk.messagebox.askyesno(title="Exit", message="Are you sure you want to exit?")
             # Quit if confirm
             if exitConfirm: self.callback()
+            else: self.root.bind_all("<Key>", self.keyPress) # rebind
         elif (e.keycode == KEY_P):
             self.playRecording()
-        print('down', e.keycode)
+        elif (e.keycode == KEY_LEFT) or (e.keycode == KEY_UP):
+            # Move selection down one index
+            if self.selectedIndex: 
+                self.selectRecording(self.selectedIndex - 1)
+        elif (e.keycode == KEY_RIGHT) or (e.keycode == KEY_DOWN):
+            # Move selection up one index
+            if (self.selectedIndex is not None) and (self.selectedIndex < len(self.recordings) - 1): 
+                self.selectRecording(self.selectedIndex + 1)
+
+        
+        print('press', e.keycode)
 
     def newRecording(self):
         # TODO: handle mode stuff
@@ -336,13 +350,15 @@ class Recorder(tk.Frame):
 
         p.terminate()
 
-    
-
-
 KEY_SPACE = 32
 KEY_DELETE = 3342463
-KEY_P = 80
+KEY_P = 112
 KEY_SHIFT_Q = 81
+KEY_LEFT = 8124162
+KEY_RIGHT = 8189699
+KEY_UP = 8320768
+KEY_DOWN = 8255233
+
 
 POS_X = 300
 POS_Y = 200
