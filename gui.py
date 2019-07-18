@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox
+from tkinter import simpledialog
 import threading
 import time
 import datetime
@@ -31,10 +32,10 @@ class Recorder(tk.Frame):
 
         sizex = 800
         sizey = 600
-        self.root = tk.Frame(self.parent, width=sizex, height=sizey)
+        self.root = tk.Frame(self.parent, width=sizex, height=sizey, padx=10, pady=10)
     
         self.myframe = tk.Frame(self.root, relief=tk.GROOVE, width=50, height=100, bd=1)
-        self.myframe.grid(row=0, rowspan=5, column=0, padx=10, pady=10)
+        self.myframe.grid(row=0, rowspan=5, column=0, padx=(0, 10), pady=(0, 10))
 
         self.canvas = tk.Canvas(self.myframe)
         self.frame = tk.Frame(self.canvas)
@@ -51,14 +52,14 @@ class Recorder(tk.Frame):
 
 
         # Let's try throwing in some buttons
-        self.recordButton = tk.Button(self.root, command=self.newRecording, text='Start Recording')
-        self.recordButton.grid(row=6, column=0, columnspan=5)
+        self.recordButton = tk.Button(self.root, command=self.newRecording, text='Start Recording', bg='blue')
+        self.recordButton.grid(row=6, column=0, columnspan=5, sticky='ew', padx=40)
 
 
 
         # Ok, let's actually have it be like a radio button thing
-        self.radioLabel = tk.Label(self.root, text="MODE", pady=0)
-        self.radioLabel.grid(row=0, column=1)
+        self.radioLabel = tk.Label(self.root, text="MODE", bg='#ccc')
+        self.radioLabel.grid(row=0, column=1, sticky='ew')
 
         self.radioGroup = tk.Frame(self.root)
 
@@ -85,16 +86,37 @@ class Recorder(tk.Frame):
 
 
         # Init the play button
-        self.playButton = tk.Button(self.root, command=self.playRecording, text="Play Selection")
-        self.playButton.grid(row=2, column=1)
+        self.playButton = tk.Button(self.root, command=self.playRecording, text="Play", fg='blue')
+        self.playButton.grid(row=2, column=1, sticky='ew')
 
         # Delete button
-        self.deleteButton = tk.Button(self.root, command=self.onDelete, text="Delete Selection")
-        self.deleteButton.grid(row=3, column=1)
+        self.deleteButton = tk.Button(self.root, command=self.onDelete, text="Delete", fg='red')
+        self.deleteButton.grid(row=3, column=1, sticky='ew')
+
+        # Save button
+        self.saveButton = tk.Button(self.root, command=self.saveAudio, text="Save", fg='green')
+        self.saveButton.grid(row=4, column=1, sticky='ew')
 
 
         # self.data()
         self.root.pack()
+
+    def saveAudio(self):
+        # Disable key bindings on root
+        self.root.unbind_all("<Key>")
+        
+        saveFile = simpledialog.askstring(title="Save Audio", prompt="Please Enter a File Name")
+
+        if not saveFile:
+            # Set to timestamp
+            saveFile = str(int(time.time()))
+
+        # Sanitize for spaces
+        saveFile = saveFile.replace(" ", "-") + ".wav"
+        print(saveFile)
+
+        # Re-attach bindings to root
+        self.root.bind_all("<Key>", self.keyPress)
 
     def onDelete(self):
         print("Deleting Selected Recording")
@@ -211,6 +233,9 @@ class Recorder(tk.Frame):
     def keyPress(self, e):
         if (e.keycode == KEY_SHIFT_Q):
             self.callback()
+
+        if (e.keycode == KEY_P):
+            self.playRecording()
         print('down', e.keycode)
 
     def newRecording(self):
@@ -225,6 +250,10 @@ class Recorder(tk.Frame):
             thread = threading.Thread(target=self.recordAudio, args=(self.addRecording,), daemon=True)
             thread.start()
 
+            # Update Button Appearance
+            self.recordButton.config(text="Stop Recording", fg='red')
+        else:
+            self.recordButton.config(text="Start Recording", fg='black')
 
         # self.addRecording("Recording " + str(len(self.recordings)))
 
@@ -337,7 +366,8 @@ POS_Y = 200
 
 
 master = tk.Tk()
-Recorder(master).pack(side="top", fill="both", expand=True)
+recorder = Recorder(master)
+recorder.pack(side="top", fill="both", expand=True)
 master.mainloop()
 
 
