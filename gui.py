@@ -241,20 +241,34 @@ class Recorder(tk.Frame):
             else: self.root.bind_all("<Key>", self.keyPress) # rebind
         elif (e.keycode == KEY_P):
             self.playRecording()
-        elif (e.keycode == KEY_LEFT) or (e.keycode == KEY_UP):
+        elif (e.keycode == KEY_LEFT):
             # Move selection down one index
-            if self.selectedIndex: 
-                self.selectRecording(self.selectedIndex - 1)
-        elif (e.keycode == KEY_RIGHT) or (e.keycode == KEY_DOWN):
+            self._moveSelectionDown()
+        elif (e.keycode == KEY_UP):
+            # Move selection down two indices
+            self._moveSelectionDown()
+            self._moveSelectionDown()
+        elif (e.keycode == KEY_DOWN):
+            # Move selection up two indices
+            self._moveSelectionUp()
+            self._moveSelectionUp()
+        elif (e.keycode == KEY_RIGHT):
             # Move selection up one index
-            if (self.selectedIndex is not None) and (self.selectedIndex < len(self.recordings) - 1): 
-                self.selectRecording(self.selectedIndex + 1)
-
+            self._moveSelectionUp()
         
         print('press', e.keycode)
 
+    def _moveSelectionUp(self):
+        if (self.selectedIndex is not None) and (self.selectedIndex < len(self.recordings) - 1): 
+                self.selectRecording(self.selectedIndex + 1)
+
+
+    def _moveSelectionDown(self):
+        if self.selectedIndex: 
+            self.selectRecording(self.selectedIndex - 1)
+
+
     def newRecording(self):
-        # TODO: handle mode stuff
         self.isRecording = not self.isRecording
 
         print("Turning Recording " + ("on" if self.isRecording else "off") + "!")
