@@ -121,21 +121,37 @@ class Recorder(tk.Frame):
         self.deleteRecording(self.selectedIndex)
 
     def addRecording(self, recording, index=None):
-        if index is None:
-            # Standard append
-            index = len(self.recordings)
+        if index is None: index = self.selectedIndex
 
-        # Insert Recording and label at specified index
-        self.recordings.insert(index, recording)
+        mode = self.currentMode.get()
+        print(mode + "  " + str(index))
 
         # Create new label object
         newLabel = tk.Label(self.frame, text=datetime.datetime.now().strftime('%H:%M:%S'))
-        self.recordingLabels.insert(index, newLabel)
+
+        # Insert Recording and label at specified index, according to mode
+        if mode == self.MODE_APPEND:
+            if index is None: index = -1
+            self.recordings.insert(index + 1, recording)
+            self.recordingLabels.insert(index + 1, newLabel)
+        elif mode == self.MODE_PREPEND:
+            self.recordings.insert(index, recording)
+            self.recordingLabels.insert(index, newLabel)
+        elif mode == self.MODE_RE_RECORD:
+            self.recordings[index] = recording
+            self.recordingLabels[index] = newLabel
+        else:
+            # Default, standard end of list append
+            index = len(self.recordings)
+            self.recordings.insert(index, recording)
+            self.recordingLabels.insert(index, newLabel)
         
         self.updateRecordingsGrid()
 
         # Update selected index
         self.selectedIndex = index
+        if mode == self.MODE_APPEND: self.selectedIndex += 1
+
         # And darken the selection
         self.darken(self.selectedIndex)
 
@@ -253,8 +269,6 @@ class Recorder(tk.Frame):
             self.recordButton.config(text="Stop Recording", fg='red')
         else:
             self.recordButton.config(text="Start Recording", fg='black')
-
-        # self.addRecording("Recording " + str(len(self.recordings)))
 
 
     def tone(self, duration = 1.0, freq = 440.0):
