@@ -15,6 +15,11 @@ class Recorder(tk.Frame):
     MODE_RE_RECORD = "rerecord"
     _LABEL_COLOR = "#AEF3E7"
 
+    _COUNTDOWN_STEPS = 3
+    _COUNTDOWN_BEEP = 0.1
+    _COUNTDOWN_TOTAL = 0.15
+    _RECORD_BEEP = 0.5
+
     def __init__(self, parent, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs)
 
@@ -309,12 +314,10 @@ class Recorder(tk.Frame):
         p.terminate()
     
     def recordAudio(self, callback):
-        p = pyaudio.PyAudio()  # Create an interface to PortAudio
-
         # Count down the recording
-        countdown = 3
-        countTotal = 0.4
-        countLen = 0.2
+        countdown = Recorder._COUNTDOWN_STEPS
+        countTotal = Recorder._COUNTDOWN_TOTAL
+        countLen = Recorder._COUNTDOWN_BEEP
 
         for i in range(countdown):
             print(str(i + 1) + "... ")
@@ -322,7 +325,9 @@ class Recorder(tk.Frame):
             self.tone(duration)
             time.sleep(countTotal - duration)
 
-        self.tone(2.0, 880)
+        self.tone(Recorder._RECORD_BEEP, 880)
+
+        p = pyaudio.PyAudio()  # Create an interface to PortAudio
 
         # Start recording
         stream = p.open(format=self.sample_format,
