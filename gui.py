@@ -58,9 +58,10 @@ class Recorder(tk.Frame):
 
         # Let's try throwing in some buttons
         self.recordButton = tk.Button(self.root, command=self.newRecording, text='Start Recording', bg='blue')
-        self.recordButton.grid(row=6, column=0, columnspan=5, sticky='ew', padx=40)
+        self.recordButton.grid(row=6, column=0, sticky='ew', padx=(0, 10))
 
-
+        self.whiteNoiseButton = tk.Button(self.root, command= lambda: self.newRecording(self.setWhiteNoise), text="White Noise")
+        # self.whiteNoiseButton.grid(row=6, column=1, sticky='ew')
 
         # Ok, let's actually have it be like a radio button thing
         self.radioLabel = tk.Label(self.root, text="MODE", bg='#ccc')
@@ -131,12 +132,13 @@ class Recorder(tk.Frame):
         mode = self.currentMode.get()
         print(mode + "  " + str(index))
 
+        if mode == self.MODE_APPEND and index is None: index = 0
+
         # Create new label object
-        newLabel = tk.Label(self.frame, text=datetime.datetime.now().strftime('%H:%M:%S'))
+        newLabel = tk.Label(self.frame, text=("(" + datetime.datetime.now().strftime('%H:%M:%S') + ")"))
 
         # Insert Recording and label at specified index, according to mode
         if mode == self.MODE_APPEND:
-            if index is None: index = -1
             self.recordings.insert(index + 1, recording)
             self.recordingLabels.insert(index + 1, newLabel)
         elif mode == self.MODE_PREPEND:
@@ -152,6 +154,9 @@ class Recorder(tk.Frame):
             self.recordingLabels.insert(index, newLabel)
         
         self.updateRecordingsGrid()
+
+        if len(self.recordings) == 1 and mode == self.MODE_APPEND:
+            index = -1 # edge case for first recording
 
         # Update selected index
         self.selectedIndex = index
@@ -201,7 +206,16 @@ class Recorder(tk.Frame):
             # Reset binding to select correct index
             item.bind("<Button-1>", 
                 lambda event, index=newIndex: self.selectRecording(index))
+            
+            # Update Label for Item
+            labelText = item.cget("text")
+            # Extract the timestamp
+            labelText = labelText[labelText.find('('):]
 
+            # Prepend the correct term, depending on the new index
+            prefix = "Term" if newIndex % 2 == 0 else "Def."
+            labelText = prefix + " " + str(int((newIndex / 2)) + 1) + " " + labelText
+            item.config(text=labelText)
 
 
     def callback(self):
@@ -272,8 +286,13 @@ class Recorder(tk.Frame):
         if self.selectedIndex: 
             self.selectRecording(self.selectedIndex - 1)
 
+    def setWhiteNoise(self, whiteNoise):
+        self.whiteNoise = whiteNoise
+        self.whiteNoiseButton.config(fg='green')
 
-    def newRecording(self):
+    def newRecording(self, callback=None):
+        if callback is None:
+            callback = self.addRecording
         self.isRecording = not self.isRecording
 
         print("Turning Recording " + ("on" if self.isRecording else "off") + "!")
@@ -281,7 +300,7 @@ class Recorder(tk.Frame):
         if self.isRecording:
             # Spawn a new recording thread
             # This thread will be responsible for creating the recording and adding it to the list
-            thread = threading.Thread(target=self.recordAudio, args=(self.addRecording,), daemon=True)
+            thread = threading.Thread(target=self.recordAudio, args=(callback,), daemon=True)
             thread.start()
 
             # Update Button Appearance
