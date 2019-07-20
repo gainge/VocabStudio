@@ -47,7 +47,7 @@ class Recorder(tk.Frame):
         self.myscrollbar = tk.Scrollbar(self.myframe, orient="vertical", command=self.canvas.yview)
         self.canvas.configure(yscrollcommand=self.myscrollbar.set)
 
-        self.myscrollbar.pack(side="right",fill="y")
+        self.myscrollbar.pack(side="right", fill="y")
         self.canvas.pack(side="left")
         self.canvas.create_window((0,0), window=self.frame, anchor='nw')
 
@@ -135,7 +135,7 @@ class Recorder(tk.Frame):
         if mode == self.MODE_APPEND and index is None: index = 0
 
         # Create new label object
-        newLabel = tk.Label(self.frame, text=("(" + datetime.datetime.now().strftime('%H:%M:%S') + ")"))
+        newLabel = tk.Label(self.frame, text=("(" + self._timestamp() + ")"))
 
         # Insert Recording and label at specified index, according to mode
         if mode == self.MODE_APPEND:
@@ -199,23 +199,31 @@ class Recorder(tk.Frame):
 
         # Create a new grid placement
         for newIndex, item in enumerate(self.recordingLabels):
-            row = newIndex / 2
-            col = newIndex % 2
-            # Reset grid position
-            item.grid(row=int(row), column=int(col))
+            if newIndex == 0:
+                # Handle the case of the title recording
+                item.grid(row=0, column=0, columnspan=2, sticky='ew')
+                item.config(text="Title (" + self._timestamp() + ")")
+            else:
+                row = ((newIndex - 1) / 2) + 1
+                col = (newIndex - 1) % 2
+                # Reset grid position
+                item.grid(row=int(row), column=int(col))
+
+                # Update Label for Item
+                labelText = item.cget("text")
+                # Extract the timestamp
+                labelText = labelText[labelText.find('('):]
+
+                # Prepend the correct term, depending on the new index
+                prefix = "Term" if (newIndex - 1) % 2 == 0 else "Def."
+                labelText = prefix + " " + str(int(((newIndex - 1) / 2)) + 1) + " " + labelText
+                item.config(text=labelText)
+            
             # Reset binding to select correct index
             item.bind("<Button-1>", 
                 lambda event, index=newIndex: self.selectRecording(index))
             
-            # Update Label for Item
-            labelText = item.cget("text")
-            # Extract the timestamp
-            labelText = labelText[labelText.find('('):]
-
-            # Prepend the correct term, depending on the new index
-            prefix = "Term" if newIndex % 2 == 0 else "Def."
-            labelText = prefix + " " + str(int((newIndex / 2)) + 1) + " " + labelText
-            item.config(text=labelText)
+            
 
 
     def callback(self):
@@ -375,6 +383,9 @@ class Recorder(tk.Frame):
         thread = threading.Thread(target=self.threadPrint, args=(count,), daemon=True)
         thread.start()
 
+    def _timestamp(self):
+        return datetime.datetime.now().strftime('%H:%M:%S')
+
     def threadPrint(self, count=10):
         for i in range(10):
             print(i)
@@ -419,6 +430,7 @@ POS_Y = 200
 
 
 master = tk.Tk()
+master.title("Vocab Track Builder")
 recorder = Recorder(master)
 recorder.pack(side="top", fill="both", expand=True)
 master.mainloop()
