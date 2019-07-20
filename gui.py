@@ -20,6 +20,9 @@ class Recorder(tk.Frame):
     _COUNTDOWN_TOTAL = 0.15
     _RECORD_BEEP = 0.5
 
+    _RECORDING_BREAK = 44100 * 4
+    _TERM_DEF_DELAY = 0.9
+
     def __init__(self, parent, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs)
 
@@ -108,19 +111,74 @@ class Recorder(tk.Frame):
     def saveAudio(self):
         # Disable key bindings on root
         self.root.unbind_all("<Key>")
+
+        confirm = tk.messagebox.askyesno(title="Save", message="Do you want to save the current recordings?")
         
-        saveFile = simpledialog.askstring(title="Save Audio", prompt="Please Enter a File Name")
+        if confirm:
+            saveFile = simpledialog.askstring(title="Save Audio", prompt="Please Enter a File Name")
 
-        if not saveFile:
-            # Set to timestamp
-            saveFile = str(int(time.time()))
+            if not saveFile:
+                # Set to timestamp
+                saveFile = str(int(time.time()))
 
-        # Sanitize for spaces
-        saveFile = saveFile.replace(" ", "-") + ".wav"
-        print(saveFile)
+            # Sanitize for spaces
+            saveFile = saveFile.replace(" ", "-") + ".wav"
 
-        # Re-attach bindings to root
+            self.writeAudio(saveFile)
+
+
+        # Re-attach bindings to roots
         self.root.bind_all("<Key>", self.keyPress)
+
+
+    def _createSilence(self, duration=44100):
+        return bytes([0] * duration)
+    
+    def writeAudio(self, fileName):
+        if len(self.recordings) == 0:
+            messagebox.showerror("Error", "Please make some recordings!")
+            return
+        # So uhhhh yeah here we go
+        # Long break followed by relativelyshort break
+        shortBreak = self._createSilence(self._RECORDING_BREAK) # I think this will be sufficient
+
+        # Now we just have to write out all the ish
+        p = pyaudio.PyAudio()
+
+        wf = wave.open(fileName, 'wb')
+        wf.setnchannels(self.channels)
+        wf.setsampwidth(p.get_sample_size(self.sample_format))
+        wf.setframerate(self.fs)
+
+        p.terminate()
+
+        wf.writeframes(b''.join(self.recordings[0]))
+        wf.writeframes(shortBreak)
+
+        # Now for all the terms
+        for i in range(1, len(self.recordings)):
+            currentRecording = self.recordings[i]
+            recordingBytes = b''.join(currentRecording)
+            wf.writeframes(recordingBytes)
+            
+            if i % 2 == 1:
+                # Create the repeat delay if on a term
+                recordingLength = len(recordingBytes)
+
+                # Doing floor division here ensures the sample is an even number of frames
+                # I think this will help in keeping things from being corrupted
+                delayLength = max((recordingLength // self.fs) * self.fs, self._RECORDING_BREAK)
+                delay = self._createSilence(delayLength)
+                wf.writeframes(delay)
+            else:
+                # Write the standard intra-term break
+                wf.writeframes(shortBreak)
+
+        wf.close()
+        
+
+
+        return
 
     def onDelete(self):
         print("Deleting Selected Recording")
@@ -199,29 +257,32 @@ class Recorder(tk.Frame):
 
         # Create a new grid placement
         for newIndex, item in enumerate(self.recordingLabels):
+            prefix = "Title"
+
             if newIndex == 0:
                 # Handle the case of the title recording
                 item.grid(row=0, column=0, columnspan=2, sticky='ew')
-                item.config(text="Title (" + self._timestamp() + ")")
             else:
                 row = ((newIndex - 1) / 2) + 1
                 col = (newIndex - 1) % 2
                 # Reset grid position
                 item.grid(row=int(row), column=int(col))
 
-                # Update Label for Item
-                labelText = item.cget("text")
-                # Extract the timestamp
-                labelText = labelText[labelText.find('('):]
-
                 # Prepend the correct term, depending on the new index
                 prefix = "Term" if (newIndex - 1) % 2 == 0 else "Def."
-                labelText = prefix + " " + str(int(((newIndex - 1) / 2)) + 1) + " " + labelText
-                item.config(text=labelText)
+                prefix = prefix + " " + str(int(((newIndex - 1) / 2)) + 1)
+            
+            # Update Label for Item
+            labelText = item.cget("text")
+            # Extract the timestamp
+            labelText = labelText[labelText.find('('):]
+            # Add on the prefix to the timestamp
+            labelText = prefix + " " + labelText
+            # Set the label text
+            item.config(text=labelText)
             
             # Reset binding to select correct index
-            item.bind("<Button-1>", 
-                lambda event, index=newIndex: self.selectRecording(index))
+            item.bind("<Button-1>", lambda event, index=newIndex: self.selectRecording(index))
             
             
 
@@ -375,7 +436,6 @@ class Recorder(tk.Frame):
         # Terminate the PortAudio interface
         p.terminate()
 
-        
         # Pass the data into the callback
         callback(frames)
 
