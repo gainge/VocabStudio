@@ -473,6 +473,24 @@ class Recorder(tk.Frame):
 
         p.terminate()
 
+
+def initMicAccess():
+    # Open PyAudio Stream to attempt to get permissions access
+    p = pyaudio.PyAudio()
+
+    stream = p.open(
+        rate=44100,
+        channels=1,
+        format=pyaudio.paInt16,
+        input=True
+    )
+    stream.stop_stream()
+    stream.close()
+
+    p.terminate()
+
+
+
 KEY_SPACE = 32
 KEY_DELETE = 3342463
 KEY_P = 112
@@ -487,13 +505,15 @@ POS_X = 300
 POS_Y = 200
 
 
-
-
 master = tk.Tk()
 master.title("Vocab Track Builder")
 recorder = Recorder(master)
 recorder.pack(side="top", fill="both", expand=True)
+
+initMicAccess()
+
 master.mainloop()
+
 
 
 print("Tried so hard and got so far")
